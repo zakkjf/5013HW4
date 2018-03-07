@@ -10,7 +10,7 @@
 *****************************************************************************/
 /**
 ​ ​*​ ​@file​ ​main.c
-​ ​*​ ​@brief​ ​Pipes IPC Example
+​ ​*​ ​@brief​ ​Shared Memory IPC Example
 ​ ​*
 ​ ​*​ ​This​ ​is an example of how shared memory (mmap) can be used for IPC
  * (Inter-process communication)
