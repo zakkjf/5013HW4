@@ -4,7 +4,10 @@
 #include <linux/sched.h>
  
  
-MODULE_LICENSE("Dual BSD/GPL");
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Zach Farmer");
+MODULE_DESCRIPTION("Traverse Thread Tree");
+MODULE_VERSION("0.01");
  
 /* Declaration of functions */
 void device_exit(void);

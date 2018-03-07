@@ -6,6 +6,11 @@
 #include <linux/kfifo.h>
 #include <linux/mutex.h>
 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Zach Farmer");
+MODULE_DESCRIPTION("Kfifo Example Across Threads");
+MODULE_VERSION("0.01");
+
 #define FIFO_SIZE 512
 
 #define next_process(p)    list_entry((p)->tasks.next, struct task_struct, tasks)

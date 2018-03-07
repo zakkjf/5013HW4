@@ -1,3 +1,27 @@
+/*****************************************************************************
+​ ​*​ ​Copyright​ ​(C)​ ​2018 ​by​ Zach Farmer
+​ ​*
+​ ​*​ ​Redistribution,​ ​modification​ ​or​ ​use​ ​of​ ​this​ ​software​ ​in​ ​source​ ​or​ ​binary
+​ ​*​ ​forms​ is permitted under the Zach Literally Could Not Care Less If You 
+ * Paid Him To License and GNU GPL.
+ *
+ * ​Zach Farmer ​is not liable for any misuse of this material.
+​ ​*
+*****************************************************************************/
+/**
+​ ​*​ ​@file​ ​main.c
+​ ​*​ ​@brief​ ​Sockets IPC Example
+​ ​*
+​ ​*​ ​This​ ​is an example of how sockets can be used for IPC
+ * (Inter-process communication) and networking
+ * (if you set up ports and/or port forwarding correctly)
+​ ​*
+​ ​*​ ​@author​ ​Zach Farmer
+​ ​*​ ​@date​ ​Mar 3 2018
+​ ​*​ ​@version​ ​69
+​ ​*
+​ ​*/
+
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
