@@ -24,6 +24,9 @@ struct mutex fifo_mutex; /* shared between the threads */
 
 struct kfifo kf;
 
+module_init(init_thread);
+module_exit(cleanup_thread);
+
 // Function executed by kernel thread
 static int thread_gather(void *unused)
 {
@@ -119,7 +122,7 @@ static int __init init_thread(void)
     
     return 0;
 }
-// Module Exit
+
 static void __exit cleanup_thread(void)
 {
    printk(KERN_INFO "Cleaning Up\n");
@@ -131,7 +134,3 @@ static void __exit cleanup_thread(void)
        printk(KERN_INFO "All threads stopped");
    }
 }
-
-MODULE_LICENSE("GPL");
-module_init(init_thread);
-module_exit(cleanup_thread);
