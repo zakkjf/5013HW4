@@ -10,7 +10,7 @@
 *****************************************************************************/
 /**
 ​ ​*​ ​@file​ ​main.c
-​ ​*​ ​@brief​ ​Pipes IPC Example
+​ ​*​ ​@brief​ ​mQueues IPC Example
 ​ ​*
 ​ ​*​ ​This​ ​is an example of how mQueues can be used for IPC
  * (Inter-process communication)
