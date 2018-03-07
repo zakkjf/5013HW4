@@ -14,15 +14,35 @@ int device_init(void);
 module_init(device_init);
 module_exit(device_exit);
  
+int print_info(struct task_struct *task)
+{
+	int childcount = 0;
+	struct list_head *list;
+
+	list_for_each(list, &task->children) 
+	{
+	
+		childcount++;
+	
+	}
+
+	printk(KERN_NOTICE "assignment: current process: %s, PID: %d, State: %ld, Child count: %d, Nice: %d", task->comm, task->pid, task->state, childcount, task_nice(task));
+
+	return 0;
+}
 int device_init(void)
 {
-    struct task_struct *task = current; // getting global current pointer
-    printk(KERN_NOTICE "assignment: current process: %s, PID: %d", task->comm, task->pid);
+    struct task_struct *task = current; // getting global current pointer 
+   
+    print_info(task);
+
     do
     {
         task = task->parent;
-        printk(KERN_NOTICE "assignment: parent process: %s, PID: %d", task->comm, task->pid);
+        print_info(task);
+
     } while (task->pid != 0);
+
     return 0;
 }
  

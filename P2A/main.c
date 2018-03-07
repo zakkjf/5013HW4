@@ -4,9 +4,37 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include "msgstruct.h"
+#include <pthread.h>
+#include <stdarg.h>
+
+pthread_mutex_t printf_mutex;
+
+/**
+​ ​*​ ​@brief​ ​Synchronous encapsulator for printf
+​ ​*
+​ ​*​ ​Mutexes printf for asynchronous call protection
+ * among multiple threads
+​ ​*
+​ ​*​ ​@param​ ​format print formatting
+ * @param ... variadic arguments for print (char *, char, etc)
+​ *
+​ ​*​ ​@return​ void
+​ ​*/
+void sync_printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    pthread_mutex_lock(&printf_mutex);
+    vprintf(format, args);
+    pthread_mutex_unlock(&printf_mutex);
+
+    va_end(args);
+}
 
 int main(void)
 {
+	pthread_mutex_init(&printf_mutex, NULL);
 	sync_printf("Pipes IPC Example\n\n");
 
         int     fd1[2], fd2[2], nbytes;
@@ -47,9 +75,9 @@ int main(void)
 
    		/* Read in a string from the pipe2 */
                 nbytes = read(fd2[0], c_readbuffer, message1->strlen);
-                printf("Child received string: %s, %d bytes long\n", c_readbuffer, nbytes);
+                sync_printf("Child received string: %s, %d bytes long\n", c_readbuffer, nbytes);
 		nbytes = read(fd2[0], c_readbuffer, 1);
-		printf("Child received LED settings: %#04x, 1 byte long\n",  *((char*)c_readbuffer));
+		sync_printf("Child received LED settings: %#04x, 1 byte long\n",  *((char*)c_readbuffer));
 
                 exit(0);
         }
@@ -66,9 +94,9 @@ int main(void)
 
                 /* Read in a string from the pipe1 */
                 nbytes = read(fd1[0], p_readbuffer, message2->strlen);
-                printf("Parent received string: %s, %d bytes long\n", p_readbuffer, nbytes);
+                sync_printf("Parent received string: %s, %d bytes long\n", p_readbuffer, nbytes);
 		nbytes = read(fd1[0], p_readbuffer, 1);
-		printf("Parent received LED settings: %#04x, 1 byte long\n",  *((char*)p_readbuffer));
+		sync_printf("Parent received LED settings: %#04x, 1 byte long\n",  *((char*)p_readbuffer));
         }
         return(0);
 }

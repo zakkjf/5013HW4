@@ -2,7 +2,7 @@ CFLAGS= -Wall -Werror -g
 LDFLAGS=-pthread 
 CC=gcc
 OBJECTS=main.o
-TARGET=5013HW4P2A_srv
+TARGET=5013HW4P2C
 
 all: $(TARGET)
 

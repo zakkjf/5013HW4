@@ -11,11 +11,11 @@
 #include "msgstruct.h"
 
 
-#define SERVER_QUEUE_NAME   "/sp-example-server"
-#define QUEUE_PERMISSIONS 0660
-#define MAX_MESSAGES 10
-#define MAX_MSG_SIZE 256
-#define MSG_BUFFER_SIZE MAX_MSG_SIZE + 10
+#define SRV_QUEUE_NAME "/testqueue"
+#define MSG_SIZE_MAX 256
+#define QUEUE_SIZE_MAX 10
+#define MSG_BUFFER_SIZE MSG_SIZE_MAX + QUEUE_SIZE_MAX
+#define PERMISSION 0660
 
 pthread_mutex_t printf_mutex;
 pthread_mutex_t log_mutex;
@@ -27,7 +27,7 @@ pthread_mutex_t log_mutex;
  * among multiple threads
 ​ ​*
 ​ ​*​ ​@param​ ​format print formatting
- * @param ... variadic arguments for print (char *, char, etc)
+ * @param ... variadic arguments for print(char *, char, etc)
 ​ *
 ​ ​*​ ​@return​ void
 ​ ​*/
@@ -43,6 +43,15 @@ void sync_printf(const char *format, ...)
     va_end(args);
 }
 
+/**
+​ ​*​ ​@brief​ clientside/childside mQueue message function
+​ ​*
+​ ​*​ ​client side of Mqueue IPC
+​ ​*
+​ ​*​ ​@param​ message message to send to server/parent
+ *
+​ ​*​ ​@return​ 0 if successful
+​ ​*/
 int client(struct msg* message)
 {
     sync_printf("Client Thread: Active\n");
@@ -51,71 +60,68 @@ int client(struct msg* message)
 
 
     // create the client queue for receiving messages from server
-    sprintf(client_queue_name, "/sp-example-client-%d", getpid ());
+    sprintf(client_queue_name, "/sp-example-client-%d", getpid());
 
     struct mq_attr attr;
 
     attr.mq_flags = 0;
-    attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_maxmsg = QUEUE_SIZE_MAX;
+    attr.mq_msgsize = MSG_SIZE_MAX;
     attr.mq_curmsgs = 0;
 
     //open client message queue from server
-    if ((qd_client = mq_open (client_queue_name, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
-        sync_printf("ERROR Client: mq_open (client)\n");
+    if((qd_client = mq_open(client_queue_name, O_RDONLY | O_CREAT, PERMISSION, &attr)) == -1) {
+        sync_printf("ERROR Client: mq_open(client)\n");
         return 1;
     }
 
     //open server message queue from client
-    if ((qd_server = mq_open (SERVER_QUEUE_NAME, O_WRONLY)) == -1) {
-        sync_printf("ERROR Client: mq_open (server)\n");
+    if((qd_server = mq_open(SRV_QUEUE_NAME, O_WRONLY)) == -1) {
+        sync_printf("ERROR Client: mq_open(server)\n");
         return 1;
     }
 
-    char in_buffer [MSG_BUFFER_SIZE];
+    char buffer [MSG_BUFFER_SIZE];
 
         sync_printf("Client: Sending Message to server\n");
-	// send header message to server (contains queue name for response)
-	if (mq_send (qd_server, client_queue_name, strlen (client_queue_name), 0) == -1) {
+	// send header message to server(contains queue name for response)
+	if(mq_send(qd_server, client_queue_name, strlen(client_queue_name), 0) == -1) {
 	    sync_printf("ERROR Client: Not able to send message to server\n");
-	    //continue;
 	}
 
 	//send string from message struct
-	if (mq_send (qd_server, message->str, message->strlen, 0) == -1) {
+	if(mq_send(qd_server, message->str, message->strlen, 0) == -1) {
 	    sync_printf("ERROR Client: Not able to send message to server\n");
-	    //continue;
 	}
 
 	//send string from message struct
-	if (mq_send (qd_server, &(message->LED), 1, 0) == -1) {
+	if(mq_send(qd_server, &(message->LED), 1, 0) == -1) {
 	    sync_printf("ERROR Client: Not able to send message to server\n");
-	    //continue;
 	}
 
 	// receive response from server
-	if (mq_receive (qd_client, in_buffer, MSG_BUFFER_SIZE, NULL) == -1) {
+	if(mq_receive(qd_client, buffer, MSG_BUFFER_SIZE, NULL) == -1) {
 	    sync_printf("ERROR Client: mq_receive\n");
 	    return 1;
 	}
 	// display string received from server
-	sync_printf("Client: String received from server: %s\n", in_buffer);
+	sync_printf("Client: String received from server: %s\n", buffer);
 
 	// receive response from server
-	if (mq_receive (qd_client, in_buffer, MSG_BUFFER_SIZE, NULL) == -1) {
+	if(mq_receive(qd_client, buffer, MSG_BUFFER_SIZE, NULL) == -1) {
 	    sync_printf("ERROR Client: mq_receive\n");
 	    return 1;
 	}
 	// display LED settings received from server
-	sync_printf("Client: LED Settings received from server: %#04x\n", *((char*)in_buffer));
+	sync_printf("Client: LED Settings received from server: %#04x\n", *((char*)buffer));
 
 
-    if (mq_close (qd_client) == -1) {
+    if(mq_close(qd_client) == -1) {
         sync_printf("ERROR Client: mq_close\n");
         return 1;
     }
 
-    if (mq_unlink (client_queue_name) == -1) {
+    if(mq_unlink(client_queue_name) == -1) {
         sync_printf("ERROR Client: mq_unlink\n");
         return 1;
     }
@@ -124,6 +130,16 @@ int client(struct msg* message)
     return 0;
 }
 
+
+/**
+​ ​*​ ​@brief​ serverside/parentside mQueue message function
+​ ​*
+​ ​*​ ​server side of Mqueue IPC
+​ ​*
+​ ​*​ ​@param​ message message response to client/child
+ *
+​ ​*​ ​@return​ 0 if successful
+​ ​*/
 int server(struct msg* message)
 {
     mqd_t qd_server, qd_client;   // queue descriptors
@@ -133,23 +149,23 @@ int server(struct msg* message)
     struct mq_attr attr;
 
     attr.mq_flags = 0;
-    attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_maxmsg = QUEUE_SIZE_MAX;
+    attr.mq_msgsize = MSG_SIZE_MAX;
     attr.mq_curmsgs = 0;
 
-    if ((qd_server = mq_open (SERVER_QUEUE_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
-        sync_printf("ERROR Server: mq_open (server)\n");
+    if((qd_server = mq_open(SRV_QUEUE_NAME, O_RDONLY | O_CREAT, PERMISSION, &attr)) == -1) {
+        sync_printf("ERROR Server: mq_open(server)\n");
         return 1;
     }
     
-    //while (1) {
+    //this part could be looped for multiple clients
+    //while(1) {
     char header [MSG_BUFFER_SIZE];
-    char in_buffer [MSG_BUFFER_SIZE];
-   // char out_buffer [MSG_BUFFER_SIZE];
+    char buffer [MSG_BUFFER_SIZE];
 
 
         // get the header message
-        if (mq_receive (qd_server, header, MSG_BUFFER_SIZE, NULL) == -1) {
+        if(mq_receive(qd_server, header, MSG_BUFFER_SIZE, NULL) == -1) {
             sync_printf("ERROR Server: mq_receive\n");
             return 1;
         }
@@ -157,41 +173,39 @@ int server(struct msg* message)
         sync_printf("Server: Header message received.\n");
 
         // get the string from client
-        if (mq_receive (qd_server, in_buffer, MSG_BUFFER_SIZE, NULL) == -1) {
+        if(mq_receive(qd_server, buffer, MSG_BUFFER_SIZE, NULL) == -1) {
             sync_printf("ERROR Server: mq_receive\n");
             return 1;
         }
 
-        sync_printf("Server: Message string received: %s\n", in_buffer);
+        sync_printf("Server: Message string received: %s\n", buffer);
 
 	// receive LED settings from client
-	if (mq_receive (qd_server, in_buffer, MSG_BUFFER_SIZE, NULL) == -1) {
+	if(mq_receive(qd_server, buffer, MSG_BUFFER_SIZE, NULL) == -1) {
 	    sync_printf("ERROR Server: mq_receive\n");
 	    return 1;
 	}
 
 	// display LED settings received from server
-	sync_printf("Server: LED Settings received from client: %#04x\n", *((char*)in_buffer));
+	sync_printf("Server: LED Settings received from client: %#04x\n", *((char*)buffer));
 
 	//open client based on header message address
 
-        if ((qd_client = mq_open (header, O_WRONLY)) == 1) {
+        if((qd_client = mq_open(header, O_WRONLY)) == 1) {
             sync_printf("ERROR Server: Not able to open client queue\n");
             return 1;
         }
 
-       // sprintf(out_buffer, "%ld", token_number);
 
         //send reply message to client
-
-        if (mq_send (qd_client, message->str, message->strlen, 0) == -1) {
+        if(mq_send(qd_client, message->str, message->strlen, 0) == -1) {
             sync_printf("ERROR Server: Not able to send message to client\n");
             return 1;
         }
 
         //send reply message to client
 
-        if (mq_send (qd_client, &(message->LED), 1, 0) == -1) {
+        if(mq_send(qd_client, &(message->LED), 1, 0) == -1) {
             sync_printf("ERROR Server: Not able to send message to client\n");
             return 1;
         }
@@ -207,6 +221,8 @@ int server(struct msg* message)
 int main(void)
 {
         pid_t   childpid;
+
+	pthread_mutex_init(&printf_mutex, NULL);
 
 	sync_printf("mQueues IPC Example\n\n");
 	struct msg* message1 = malloc(sizeof(struct msg));
