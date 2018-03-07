@@ -1,6 +1,6 @@
 #include <linux/module.h>
-#include <linux/kernel.h> /* printk() */
-#include <linux/errno.h>   /* error codes */
+#include <linux/kernel.h>
+#include <linux/errno.h>
 #include <linux/sched.h>
  
  
@@ -8,12 +8,10 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Zach Farmer");
 MODULE_DESCRIPTION("Traverse Thread Tree");
 MODULE_VERSION("0.01");
- 
-/* Declaration of functions */
+
 void device_exit(void);
 int device_init(void);
-   
-/* Declaration of the init and exit routines */
+
 module_init(device_init);
 module_exit(device_exit);
  
@@ -35,7 +33,8 @@ int print_info(struct task_struct *task)
 }
 int device_init(void)
 {
-    struct task_struct *task = current; // getting global current pointer 
+    printk(KERN_NOTICE "Starting Traverse Module");
+    struct task_struct *task = current; // grab current task
    
     print_info(task);
 
@@ -50,5 +49,5 @@ int device_init(void)
 }
  
 void device_exit(void) {
-  printk(KERN_NOTICE "assignment: exiting module");
+  printk(KERN_NOTICE "Exiting Traverse Module");
 }
